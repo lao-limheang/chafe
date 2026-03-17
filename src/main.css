@@ -1,0 +1,15 @@
+h1{
+    font-family: "Betania Patmos", cursive;
+    font-weight: 400;
+    font-style: normal;
+    font-weight: bold;
+    color: rgb(220, 188, 147);
+}
+@media screen and (max-width: 670px) {
+    h1{
+        font-size: 32px;
+    }
+}
+@media screen and (max-width: 670px) {
+    
+}
