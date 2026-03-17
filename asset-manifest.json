@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/chafe/static/css/main.8f82d917.css",
+    "main.js": "/chafe/static/js/main.a0020a13.js",
+    "static/media/machin1.png": "/chafe/static/media/machin1.285a05f8f427c42a9821.png",
+    "static/media/latte.png": "/chafe/static/media/latte.bd6b5acf9e06a6b4a29a.png",
+    "static/media/product.png": "/chafe/static/media/product.029f10e09d6ccc9d479d.png",
+    "static/media/latteArt.png": "/chafe/static/media/latteArt.f999e0b65f00220ac430.png",
+    "static/media/machin2.png": "/chafe/static/media/machin2.6952981ff7950b173b5c.png",
+    "static/media/art.png": "/chafe/static/media/art.5a0eb5c083a276fdcce4.png",
+    "static/media/expresso.png": "/chafe/static/media/expresso.c1fe2660dd971bf8d053.png",
+    "static/media/bgs.png": "/chafe/static/media/bgs.dd8b43bd3424a9f07921.png",
+    "static/media/machin3.png": "/chafe/static/media/machin3.718aa55a9b94090256e4.png",
+    "index.html": "/chafe/index.html",
+    "main.8f82d917.css.map": "/chafe/static/css/main.8f82d917.css.map",
+    "main.a0020a13.js.map": "/chafe/static/js/main.a0020a13.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.8f82d917.css",
+    "static/js/main.a0020a13.js"
+  ]
+}
