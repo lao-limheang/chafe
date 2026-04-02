@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chafe - Order</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FAF7F2',
+            espresso: '#1A1A1A',
+            mocha: '#3D2B1F',
+            caramel: '#C4A77D',
+            latte: '#E8DDD4',
+            accent: '#8B4513',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #FAF7F2; }
+    ::-webkit-scrollbar-thumb { background: #C4A77D; border-radius: 3px; }
+    
+    .menu-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .menu-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    }
+    
+    .category-pill {
+      transition: all 0.2s ease;
+    }
+    .category-pill.active {
+      background: #1A1A1A;
+      color: #FAF7F2;
+    }
+    
+    .cart-panel {
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cart-panel.open { transform: translateX(0); }
+    
+    .overlay {
+      transition: opacity 0.3s ease;
+    }
+    
+    .btn-primary {
+      background: #1A1A1A;
+      color: #FAF7F2;
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+      background: #3D2B1F;
+    }
+    
+    .qty-btn {
+      transition: all 0.15s ease;
+    }
+    .qty-btn:hover {
+      background: #1A1A1A;
+      color: #FAF7F2;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease forwards;
+    }
+    
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.5s ease forwards;
+    }
+    
+    .toast {
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .temp-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .temp-iced { background: #DBEAFE; color: #1E40AF; }
+    .temp-hot { background: #FEE2E2; color: #991B1B; }
+    .temp-frappe { background: #E0E7FF; color: #4338CA; }
+  </style>
+</head>
+<body class="bg-cream text-espresso min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-cream/95 backdrop-blur-md border-b border-latte">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <h1 class="font-serif text-2xl sm:text-3xl font-bold tracking-tight">CHAFE</h1>
+        <span class="hidden sm:block w-px h-6 bg-latte"></span>
+        <span class="hidden sm:block text-xs tracking-[0.2em] text-mocha/60 uppercase">Order</span>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <!-- Language -->
+        <div class="relative" id="langWrap">
+          <button onclick="toggleLang()" class="flex items-center gap-1.5 px-3 py-2 text-sm border border-latte rounded-full hover:border-espresso transition-colors">
+            <span id="langFlag">EN</span>
+            <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div id="langDropdown" class="hidden absolute top-full right-0 mt-2 bg-white border border-latte rounded-xl shadow-lg overflow-hidden min-w-[120px] z-50">
+            <button onclick="setLang('en')" class="w-full px-4 py-2.5 text-left text-sm hover:bg-cream transition-colors flex items-center gap-2">
+              <span>EN</span>
+              <span class="text-xs text-mocha/50">English</span>
+            </button>
+            <button onclick="setLang('kh')" class="w-full px-4 py-2.5 text-left text-sm hover:bg-cream transition-colors flex items-center gap-2">
+              <span>KH</span>
+              <span class="text-xs text-mocha/50">Khmer</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- My Orders -->
+        <button onclick="openMyOrders()" class="flex items-center gap-2 px-3 py-2 text-sm border border-latte rounded-full hover:border-espresso transition-colors relative">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/></svg>
+          <span class="hidden sm:inline" id="myOrdersLabel">Orders</span>
+          <span id="liveOrderDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-cream"></span>
+        </button>
+        
+        <!-- Cart -->
+        <button onclick="openCart()" class="btn-primary flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium relative">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+          <span class="hidden sm:inline" id="cartLabel">Cart</span>
+          <span id="cartBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-caramel text-espresso text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Category Pills -->
+  <div class="sticky top-[73px] z-30 bg-cream/90 backdrop-blur-sm border-b border-latte">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 overflow-x-auto" style="scrollbar-width: none;">
+      <div id="catRow" class="flex gap-2 min-w-max">
+        <div class="h-9 w-16 bg-latte rounded-full animate-pulse"></div>
+        <div class="h-9 w-20 bg-latte rounded-full animate-pulse"></div>
+        <div class="h-9 w-24 bg-latte rounded-full animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popular Section -->
+  <section id="popularSection" class="hidden max-w-6xl mx-auto px-4 sm:px-6 pt-8">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-8 h-8 rounded-full bg-caramel/20 flex items-center justify-center">
+        <svg class="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z"/></svg>
+      </div>
+      <h2 class="font-serif text-xl font-semibold" id="popularTitle">Popular</h2>
+    </div>
+    <div id="popularGrid" class="flex gap-4 overflow-x-auto pb-4" style="scrollbar-width: none;"></div>
+  </section>
+
+  <!-- Menu Grid -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <div id="menuSkeleton" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div class="h-64 bg-latte rounded-2xl animate-pulse"></div>
+      <div class="h-64 bg-latte rounded-2xl animate-pulse"></div>
+      <div class="h-64 bg-latte rounded-2xl animate-pulse"></div>
+      <div class="h-64 bg-latte rounded-2xl animate-pulse"></div>
+    </div>
+    <div id="menuGrid" class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+    <p id="emptyMenu" class="hidden text-center py-20 text-mocha/50"></p>
+  </main>
+
+  <!-- Cart Overlay -->
+  <div id="cartOverlay" onclick="closePanels()" class="overlay fixed inset-0 bg-espresso/50 backdrop-blur-sm z-50 hidden"></div>
+  
+  <!-- Cart Panel -->
+  <aside id="cartPanel" class="cart-panel fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white z-50 flex flex-col shadow-2xl translate-x-full">
+    <div class="px-6 py-5 border-b border-latte flex items-center justify-between">
+      <div>
+        <h2 class="font-serif text-2xl font-semibold" id="cartTitle">Your Order</h2>
+        <p class="text-sm text-mocha/60 mt-0.5" id="cartSubtitle">Review before placing</p>
+      </div>
+      <button onclick="closePanels()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-cream transition-colors text-mocha/60 hover:text-espresso">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div id="cartItems" class="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-cream/50"></div>
+    
+    <div id="cartEmpty" class="hidden flex-1 flex flex-col items-center justify-center gap-4 bg-cream/50">
+      <div class="w-20 h-20 rounded-full border-2 border-dashed border-latte flex items-center justify-center">
+        <svg class="w-8 h-8 text-mocha/30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+      </div>
+      <p class="text-mocha/50" id="emptyCartText">Your cart is empty</p>
+    </div>
+    
+    <div class="border-t border-latte bg-white">
+      <!-- Coupon -->
+      <div class="px-6 py-4 border-b border-latte">
+        <div class="flex gap-2" id="couponBox">
+          <input type="text" id="couponInput" placeholder="Promo code" class="flex-1 bg-cream border border-latte rounded-xl px-4 py-2.5 text-sm focus:border-espresso focus:outline-none uppercase tracking-wider"/>
+          <button onclick="applyCoupon()" class="btn-primary px-5 rounded-xl text-sm font-medium" id="applyBtn">Apply</button>
+        </div>
+        <div id="appliedCoupon" class="hidden flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+          <span class="text-green-700 text-sm font-semibold flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="couponCode"></span>
+          </span>
+          <button onclick="removeCoupon()" class="text-mocha/50 hover:text-red-500 text-xs font-semibold uppercase tracking-wider transition-colors">Remove</button>
+        </div>
+      </div>
+      
+      <!-- Table & Note -->
+      <div class="px-6 py-4 border-b border-latte flex gap-4">
+        <div class="w-1/3">
+          <label class="text-[10px] text-mocha/60 uppercase font-semibold tracking-wider block mb-1.5">Table No.</label>
+          <select id="tableSelect" class="w-full bg-cream border border-latte rounded-xl px-3 py-2.5 text-sm font-semibold text-center focus:border-espresso focus:outline-none appearance-none cursor-pointer">
+            <option value="">-</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="text-[10px] text-mocha/60 uppercase font-semibold tracking-wider block mb-1.5">Note</label>
+          <input type="text" id="noteInput" placeholder="Any requests?" class="w-full bg-cream border border-latte rounded-xl px-4 py-2.5 text-sm focus:border-espresso focus:outline-none"/>
+        </div>
+      </div>
+      
+      <!-- Totals -->
+      <div class="px-6 py-5">
+        <div id="subtotalRow" class="hidden flex justify-between items-center mb-2 text-mocha/60 text-sm">
+          <span>Subtotal</span>
+          <span id="subtotalAmt" class="font-medium">$0.00</span>
+        </div>
+        <div id="discountRow" class="hidden flex justify-between items-center mb-3 text-green-600 text-sm">
+          <span>Discount</span>
+          <span id="discountAmt" class="font-semibold">-$0.00</span>
+        </div>
+        <div class="flex justify-between items-center mb-5">
+          <span class="font-semibold">Total</span>
+          <span id="totalAmt" class="font-serif text-3xl font-bold">$0.00</span>
+        </div>
+        <button onclick="placeOrder()" id="placeOrderBtn" class="btn-primary w-full py-4 rounded-xl font-semibold tracking-wide">Place Order</button>
+        <button onclick="clearCart()" class="w-full mt-3 py-2 text-xs text-mocha/50 hover:text-accent transition-colors">Clear cart</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- My Orders Panel -->
+  <aside id="myOrdersPanel" class="cart-panel fixed bottom-0 left-0 right-0 sm:top-0 sm:left-auto sm:right-0 sm:h-full sm:w-[420px] bg-white z-50 flex flex-col shadow-2xl rounded-t-3xl sm:rounded-none max-h-[85vh] sm:max-h-full translate-x-full sm:translate-x-full translate-y-full sm:translate-y-0">
+    <div class="px-6 py-5 border-b border-latte flex items-center justify-between">
+      <h2 class="font-serif text-2xl font-semibold" id="myOrdersTitle">My Orders</h2>
+      <button onclick="closePanels()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-cream transition-colors text-mocha/60 hover:text-espresso">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="myOrdersList" class="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-cream/50"></div>
+  </aside>
+
+  <!-- Customize Modal -->
+  <div id="customModal" class="fixed inset-0 z-[60] bg-espresso/50 backdrop-blur-sm hidden items-center justify-center">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-[380px] mx-4 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-start mb-5 pb-5 border-b border-latte">
+        <div>
+          <h3 class="font-serif text-xl font-semibold" id="modalTitle">Drink Name</h3>
+          <p class="text-sm text-mocha/60 mt-1" id="modalSubtitle">Customize your drink</p>
+        </div>
+        <button onclick="closeModal()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-cream transition-colors text-mocha/60">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      
+      <!-- Temperature -->
+      <div id="tempSection" class="mb-5">
+        <p class="text-xs text-mocha/60 uppercase font-semibold tracking-wider mb-2">Temperature</p>
+        <div class="flex gap-2" id="tempBtns"></div>
+      </div>
+      
+      <!-- Size -->
+      <div id="sizeSection" class="mb-5">
+        <p class="text-xs text-mocha/60 uppercase font-semibold tracking-wider mb-2">Size</p>
+        <div class="flex gap-2" id="sizeBtns"></div>
+      </div>
+      
+      <!-- Sugar -->
+      <div id="sugarSection" class="mb-5">
+        <p class="text-xs text-mocha/60 uppercase font-semibold tracking-wider mb-2">Sugar Level</p>
+        <div class="flex flex-wrap gap-2" id="sugarBtns"></div>
+      </div>
+      
+      <!-- Toppings -->
+      <div id="toppingsSection" class="mb-5">
+        <p class="text-xs text-mocha/60 uppercase font-semibold tracking-wider mb-2">Toppings</p>
+        <div class="grid grid-cols-2 gap-2" id="toppingsBtns"></div>
+      </div>
+      
+      <!-- Note -->
+      <div class="mb-5">
+        <p class="text-xs text-mocha/60 uppercase font-semibold tracking-wider mb-2">Special Note</p>
+        <input type="text" id="itemNote" placeholder="e.g. Less ice" class="w-full bg-cream border border-latte rounded-xl px-4 py-2.5 text-sm focus:border-espresso focus:outline-none"/>
+      </div>
+      
+      <!-- Quantity -->
+      <div class="flex items-center justify-between mb-6 p-4 bg-cream rounded-xl">
+        <span class="text-sm font-medium">Quantity</span>
+        <div class="flex items-center gap-3">
+          <button onclick="changeQty(-1)" class="qty-btn w-9 h-9 rounded-full border border-latte flex items-center justify-center font-semibold">-</button>
+          <span id="modalQty" class="w-8 text-center font-semibold">1</span>
+          <button onclick="changeQty(1)" class="qty-btn w-9 h-9 rounded-full border border-latte flex items-center justify-center font-semibold">+</button>
+        </div>
+      </div>
+      
+      <!-- Add Button -->
+      <button onclick="addToCart()" class="btn-primary w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-3">
+        <span id="addBtnText">Add to Cart</span>
+        <span id="addBtnPrice" class="text-caramel font-bold">$0.00</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 bg-espresso text-cream px-6 py-3 rounded-full shadow-lg text-sm font-medium z-[70] flex items-center gap-2">
+    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    <span id="toastText">Added to cart</span>
+  </div>
+
+  <!-- Order Status Bar -->
+  <div id="statusBar" class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-latte p-4 flex items-center gap-4 shadow-lg translate-y-full transition-transform duration-400">
+    <div id="statusDot" class="w-3 h-3 rounded-full bg-caramel animate-pulse"></div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold truncate" id="statusText">Order is being prepared...</p>
+      <p class="text-xs text-mocha/60">Table <span id="statusTable">-</span> - #<span id="statusOrderId">-</span></p>
+    </div>
+    <button onclick="openMyOrders()" class="btn-primary px-4 py-2 rounded-full text-xs font-medium">View</button>
+    <button onclick="dismissStatus()" class="text-mocha/40 hover:text-espresso text-xl leading-none">&times;</button>
+  </div>
+
+  <script>
+    // ===== DATA =====
+    const MENU_DATA = [
+      { id: 1, name: 'Espresso', nameKh: 'អេស្ព្រេសូ', price: 2.50, category: 'coffee', image: 'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?w=400&h=400&fit=crop', popular: true, temps: ['hot'], sizes: ['S', 'M'], sugars: ['0%', '25%', '50%', '75%', '100%'] },
+      { id: 2, name: 'Latte', nameKh: 'ឡាតេ', price: 3.50, category: 'coffee', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=400&fit=crop', popular: true, temps: ['hot', 'iced'], sizes: ['S', 'M', 'L'], sugars: ['0%', '25%', '50%', '75%', '100%'] },
+      { id: 3, name: 'Cappuccino', nameKh: 'កាពូឈីណូ', price: 3.50, category: 'coffee', image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=400&fit=crop', popular: false, temps: ['hot'], sizes: ['S', 'M', 'L'], sugars: ['0%', '25%', '50%', '75%', '100%'] },
+      { id: 4, name: 'Americano', nameKh: 'អាមេរិកាណូ', price: 3.00, category: 'coffee', image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&h=400&fit=crop', popular: false, temps: ['hot', 'iced'], sizes: ['S', 'M', 'L'], sugars: ['0%', '25%', '50%', '75%', '100%'] },
+      { id: 5, name: 'Mocha', nameKh: 'មូកា', price: 4.00, category: 'coffee', image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=400&h=400&fit=crop', popular: true, temps: ['hot', 'iced', 'frappe'], sizes: ['M', 'L'], sugars: ['25%', '50%', '75%', '100%'] },
+      { id: 6, name: 'Matcha Latte', nameKh: 'ម៉ាត់ឆា ឡាតេ', price: 4.50, category: 'tea', image: 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=400&h=400&fit=crop', popular: true, temps: ['hot', 'iced'], sizes: ['M', 'L'], sugars: ['0%', '25%', '50%', '75%', '100%'] },
+      { id: 7, name: 'Thai Tea', nameKh: 'តែថៃ', price: 3.50, category: 'tea', image: 'https://images.unsplash.com/photo-1558857563-b371033873b8?w=400&h=400&fit=crop', popular: false, temps: ['iced'], sizes: ['M', 'L'], sugars: ['50%', '75%', '100%'] },
+      { id: 8, name: 'Green Tea', nameKh: 'តែបៃតង', price: 3.00, category: 'tea', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop', popular: false, temps: ['hot', 'iced'], sizes: ['S', 'M', 'L'], sugars: ['0%', '25%', '50%'] },
+      { id: 9, name: 'Chocolate Cake', nameKh: 'នំសូកូឡា', price: 5.00, category: 'dessert', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop', popular: false, temps: [], sizes: [], sugars: [] },
+      { id: 10, name: 'Croissant', nameKh: 'ក្រៅសង់', price: 3.00, category: 'dessert', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop', popular: true, temps: [], sizes: [], sugars: [] },
+      { id: 11, name: 'Cheesecake', nameKh: 'នំឈីស', price: 5.50, category: 'dessert', image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&h=400&fit=crop', popular: false, temps: [], sizes: [], sugars: [] },
+      { id: 12, name: 'Fruit Smoothie', nameKh: 'ស្មូធី​ផ្លែឈើ', price: 4.50, category: 'smoothie', image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=400&h=400&fit=crop', popular: false, temps: ['iced'], sizes: ['M', 'L'], sugars: ['25%', '50%', '75%', '100%'] },
+    ];
+
+    const TOPPINGS = [
+      { id: 't1', name: 'Boba', nameKh: 'បូបា', price: 0.50 },
+      { id: 't2', name: 'Whipped Cream', nameKh: 'ក្រែម', price: 0.50 },
+      { id: 't3', name: 'Coconut Jelly', nameKh: 'ជេលីដូង', price: 0.50 },
+      { id: 't4', name: 'Pudding', nameKh: 'ពូឌីង', price: 0.75 },
+    ];
+
+    const CATEGORIES = [
+      { id: 'all', name: 'All', nameKh: 'ទាំងអស់' },
+      { id: 'coffee', name: 'Coffee', nameKh: 'កាហ្វេ' },
+      { id: 'tea', name: 'Tea', nameKh: 'តែ' },
+      { id: 'smoothie', name: 'Smoothie', nameKh: 'ស្មូធី' },
+      { id: 'dessert', name: 'Dessert', nameKh: 'បង្អែម' },
+    ];
+
+    const COUPONS = { 'SAVE10': 10, 'CHAFE20': 20 };
+    const TABLES = Array.from({ length: 12 }, (_, i) => i + 1);
+
+    // ===== STATE =====
+    let lang = 'en';
+    let currentCategory = 'all';
+    let cart = [];
+    let orders = [];
+    let appliedCoupon = null;
+    let currentItem = null;
+    let modalState = { temp: '', size: '', sugar: '', toppings: [], note: '', qty: 1 };
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFromStorage();
+      renderCategories();
+      renderMenu();
+      renderPopular();
+      renderTableOptions();
+      updateCartBadge();
+      checkLiveOrders();
+    });
+
+    function loadFromStorage() {
+      cart = JSON.parse(localStorage.getItem('chafe_cart') || '[]');
+      orders = JSON.parse(localStorage.getItem('chafe_orders') || '[]');
+      lang = localStorage.getItem('chafe_lang') || 'en';
+      updateLangUI();
+    }
+
+    function saveToStorage() {
+      localStorage.setItem('chafe_cart', JSON.stringify(cart));
+      localStorage.setItem('chafe_orders', JSON.stringify(orders));
+      localStorage.setItem('chafe_lang', lang);
+    }
+
+    // ===== LANGUAGE =====
+    function toggleLang() {
+      document.getElementById('langDropdown').classList.toggle('hidden');
+    }
+
+    function setLang(l) {
+      lang = l;
+      updateLangUI();
+      renderCategories();
+      renderMenu();
+      renderPopular();
+      renderCart();
+      document.getElementById('langDropdown').classList.add('hidden');
+      saveToStorage();
+    }
+
+    function updateLangUI() {
+      document.getElementById('langFlag').textContent = lang === 'en' ? 'EN' : 'KH';
+    }
+
+    function getText(item, key = 'name') {
+      return lang === 'kh' && item[key + 'Kh'] ? item[key + 'Kh'] : item[key];
+    }
+
+    // ===== CATEGORIES =====
+    function renderCategories() {
+      const row = document.getElementById('catRow');
+      row.innerHTML = CATEGORIES.map(cat => `
+        <button onclick="setCategory('${cat.id}')" class="category-pill px-5 py-2 rounded-full text-sm font-medium border border-latte ${currentCategory === cat.id ? 'active' : 'hover:border-espresso'}">
+          ${getText(cat)}
+        </button>
+      `).join('');
+    }
+
+    function setCategory(id) {
+      currentCategory = id;
+      renderCategories();
+      renderMenu();
+    }
+
+    // ===== MENU =====
+    function renderMenu() {
+      const grid = document.getElementById('menuGrid');
+      const skeleton = document.getElementById('menuSkeleton');
+      const empty = document.getElementById('emptyMenu');
+      
+      const items = currentCategory === 'all' 
+        ? MENU_DATA 
+        : MENU_DATA.filter(i => i.category === currentCategory);
+
+      setTimeout(() => {
+        skeleton.classList.add('hidden');
+        
+        if (items.length === 0) {
+          grid.classList.add('hidden');
+          empty.classList.remove('hidden');
+          empty.textContent = lang === 'en' ? 'No items found' : 'រកមិនឃើញ';
+          return;
+        }
+
+        empty.classList.add('hidden');
+        grid.classList.remove('hidden');
+        grid.innerHTML = items.map((item, i) => `
+          <div class="menu-card bg-white rounded-2xl overflow-hidden border border-latte cursor-pointer animate-fade-in" style="animation-delay: ${i * 50}ms" onclick="openCustomize(${item.id})">
+            <div class="aspect-square overflow-hidden relative">
+              <img src="${item.image}" alt="${getText(item)}" class="w-full h-full object-cover"/>
+              ${item.popular ? '<span class="absolute top-3 left-3 bg-espresso text-cream text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Popular</span>' : ''}
+            </div>
+            <div class="p-4">
+              <h3 class="font-semibold text-sm mb-1 line-clamp-1">${getText(item)}</h3>
+              <div class="flex items-center justify-between">
+                <span class="font-serif text-lg font-bold">$${item.price.toFixed(2)}</span>
+                <button class="w-8 h-8 rounded-full bg-cream hover:bg-espresso hover:text-cream transition-colors flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }, 300);
+    }
+
+    // ===== POPULAR =====
+    function renderPopular() {
+      const section = document.getElementById('popularSection');
+      const grid = document.getElementById('popularGrid');
+      const popular = MENU_DATA.filter(i => i.popular);
+
+      if (popular.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      grid.innerHTML = popular.map(item => `
+        <div class="menu-card flex-shrink-0 w-36 bg-white rounded-2xl overflow-hidden border border-latte cursor-pointer" onclick="openCustomize(${item.id})">
+          <div class="aspect-square overflow-hidden">
+            <img src="${item.image}" alt="${getText(item)}" class="w-full h-full object-cover"/>
+          </div>
+          <div class="p-3">
+            <h3 class="font-medium text-xs mb-1 line-clamp-1">${getText(item)}</h3>
+            <span class="font-serif text-sm font-bold">$${item.price.toFixed(2)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ===== CUSTOMIZE MODAL =====
+    function openCustomize(id) {
+      currentItem = MENU_DATA.find(i => i.id === id);
+      if (!currentItem) return;
+
+      modalState = {
+        temp: currentItem.temps[0] || '',
+        size: currentItem.sizes[0] || '',
+        sugar: currentItem.sugars.includes('50%') ? '50%' : currentItem.sugars[0] || '',
+        toppings: [],
+        note: '',
+        qty: 1
+      };
+
+      document.getElementById('modalTitle').textContent = getText(currentItem);
+      document.getElementById('modalSubtitle').textContent = lang === 'en' ? 'Customize your drink' : 'កែប្រែភេសជ្ជៈ';
+      
+      // Temperature
+      const tempSection = document.getElementById('tempSection');
+      const tempBtns = document.getElementById('tempBtns');
+      if (currentItem.temps.length > 0) {
+        tempSection.classList.remove('hidden');
+        tempBtns.innerHTML = currentItem.temps.map(t => `
+          <button onclick="setModalTemp('${t}')" class="flex-1 py-2.5 rounded-xl text-sm font-medium border ${modalState.temp === t ? 'border-espresso bg-espresso text-cream' : 'border-latte hover:border-espresso'} transition-all">
+            ${t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        `).join('');
+      } else {
+        tempSection.classList.add('hidden');
+      }
+
+      // Size
+      const sizeSection = document.getElementById('sizeSection');
+      const sizeBtns = document.getElementById('sizeBtns');
+      if (currentItem.sizes.length > 0) {
+        sizeSection.classList.remove('hidden');
+        sizeBtns.innerHTML = currentItem.sizes.map(s => `
+          <button onclick="setModalSize('${s}')" class="flex-1 py-2.5 rounded-xl text-sm font-medium border ${modalState.size === s ? 'border-espresso bg-espresso text-cream' : 'border-latte hover:border-espresso'} transition-all">
+            ${s}
+          </button>
+        `).join('');
+      } else {
+        sizeSection.classList.add('hidden');
+      }
+
+      // Sugar
+      const sugarSection = document.getElementById('sugarSection');
+      const sugarBtns = document.getElementById('sugarBtns');
+      if (currentItem.sugars.length > 0) {
+        sugarSection.classList.remove('hidden');
+        sugarBtns.innerHTML = currentItem.sugars.map(s => `
+          <button onclick="setModalSugar('${s}')" class="px-4 py-2 rounded-xl text-sm font-medium border ${modalState.sugar === s ? 'border-espresso bg-espresso text-cream' : 'border-latte hover:border-espresso'} transition-all">
+            ${s}
+          </button>
+        `).join('');
+      } else {
+        sugarSection.classList.add('hidden');
+      }
+
+      // Toppings
+      const toppingsSection = document.getElementById('toppingsSection');
+      if (currentItem.category !== 'dessert') {
+        toppingsSection.classList.remove('hidden');
+        document.getElementById('toppingsBtns').innerHTML = TOPPINGS.map(t => `
+          <button onclick="toggleTopping('${t.id}')" class="px-3 py-2 rounded-xl text-xs font-medium border border-latte hover:border-espresso transition-all text-left" id="top-${t.id}">
+            ${getText(t)} <span class="text-mocha/50">+$${t.price.toFixed(2)}</span>
+          </button>
+        `).join('');
+      } else {
+        toppingsSection.classList.add('hidden');
+      }
+
+      document.getElementById('itemNote').value = '';
+      document.getElementById('modalQty').textContent = '1';
+      updateModalPrice();
+
+      document.getElementById('customModal').classList.remove('hidden');
+      document.getElementById('customModal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('customModal').classList.add('hidden');
+      document.getElementById('customModal').classList.remove('flex');
+      currentItem = null;
+    }
+
+    function setModalTemp(t) {
+      modalState.temp = t;
+      openCustomize(currentItem.id);
+    }
+
+    function setModalSize(s) {
+      modalState.size = s;
+      openCustomize(currentItem.id);
+    }
+
+    function setModalSugar(s) {
+      modalState.sugar = s;
+      openCustomize(currentItem.id);
+    }
+
+    function toggleTopping(id) {
+      const idx = modalState.toppings.indexOf(id);
+      if (idx > -1) {
+        modalState.toppings.splice(idx, 1);
+      } else {
+        modalState.toppings.push(id);
+      }
+      
+      TOPPINGS.forEach(t => {
+        const btn = document.getElementById('top-' + t.id);
+        if (modalState.toppings.includes(t.id)) {
+          btn.classList.add('bg-espresso', 'text-cream', 'border-espresso');
+        } else {
+          btn.classList.remove('bg-espresso', 'text-cream', 'border-espresso');
+        }
+      });
+      
+      updateModalPrice();
+    }
+
+    function changeQty(delta) {
+      modalState.qty = Math.max(1, modalState.qty + delta);
+      document.getElementById('modalQty').textContent = modalState.qty;
+      updateModalPrice();
+    }
+
+    function updateModalPrice() {
+      if (!currentItem) return;
+      let price = currentItem.price;
+      modalState.toppings.forEach(tid => {
+        const t = TOPPINGS.find(x => x.id === tid);
+        if (t) price += t.price;
+      });
+      price *= modalState.qty;
+      document.getElementById('addBtnPrice').textContent = '$' + price.toFixed(2);
+    }
+
+    // ===== CART =====
+    function addToCart() {
+      if (!currentItem) return;
+
+      let price = currentItem.price;
+      const toppingItems = [];
+      modalState.toppings.forEach(tid => {
+        const t = TOPPINGS.find(x => x.id === tid);
+        if (t) {
+          price += t.price;
+          toppingItems.push(t);
+        }
+      });
+
+      const cartItem = {
+        uid: Date.now() + Math.random(),
+        item: currentItem,
+        temp: modalState.temp,
+        size: modalState.size,
+        sugar: modalState.sugar,
+        toppings: toppingItems,
+        note: document.getElementById('itemNote').value,
+        qty: modalState.qty,
+        unitPrice: price
+      };
+
+      cart.push(cartItem);
+      saveToStorage();
+      updateCartBadge();
+      closeModal();
+      showToast(lang === 'en' ? 'Added to cart' : 'បានបន្ថែមទៅរទេះ');
+    }
+
+    function updateCartBadge() {
+      const badge = document.getElementById('cartBadge');
+      const count = cart.reduce((a, c) => a + c.qty, 0);
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+      } else {
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      }
+    }
+
+    function openCart() {
+      renderCart();
+      document.getElementById('cartOverlay').classList.remove('hidden');
+      document.getElementById('cartPanel').classList.add('open');
+    }
+
+    function renderCart() {
+      const itemsEl = document.getElementById('cartItems');
+      const emptyEl = document.getElementById('cartEmpty');
+
+      if (cart.length === 0) {
+        itemsEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        emptyEl.classList.add('flex');
+        document.getElementById('placeOrderBtn').disabled = true;
+        document.getElementById('subtotalRow').classList.add('hidden');
+        document.getElementById('discountRow').classList.add('hidden');
+        document.getElementById('totalAmt').textContent = '$0.00';
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      emptyEl.classList.remove('flex');
+      itemsEl.classList.remove('hidden');
+      document.getElementById('placeOrderBtn').disabled = false;
+
+      itemsEl.innerHTML = cart.map(c => `
+        <div class="bg-white rounded-xl p-4 border border-latte">
+          <div class="flex gap-3">
+            <img src="${c.item.image}" alt="${getText(c.item)}" class="w-16 h-16 rounded-lg object-cover flex-shrink-0"/>
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-start">
+                <h4 class="font-semibold text-sm">${getText(c.item)}</h4>
+                <button onclick="removeFromCart('${c.uid}')" class="text-mocha/40 hover:text-red-500 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1 mt-1">
+                ${c.temp ? `<span class="temp-badge temp-${c.temp}">${c.temp}</span>` : ''}
+                ${c.size ? `<span class="text-[10px] bg-cream px-2 py-0.5 rounded-full">${c.size}</span>` : ''}
+                ${c.sugar ? `<span class="text-[10px] bg-cream px-2 py-0.5 rounded-full">${c.sugar}</span>` : ''}
+              </div>
+              ${c.toppings.length > 0 ? `<p class="text-[10px] text-mocha/50 mt-1">+ ${c.toppings.map(t => getText(t)).join(', ')}</p>` : ''}
+              ${c.note ? `<p class="text-[10px] text-mocha/50 italic mt-1">"${c.note}"</p>` : ''}
+              <div class="flex items-center justify-between mt-2">
+                <div class="flex items-center gap-2">
+                  <button onclick="updateCartQty('${c.uid}', -1)" class="w-6 h-6 rounded-full border border-latte flex items-center justify-center text-xs hover:bg-espresso hover:text-cream hover:border-espresso transition-colors">-</button>
+                  <span class="text-sm font-medium w-5 text-center">${c.qty}</span>
+                  <button onclick="updateCartQty('${c.uid}', 1)" class="w-6 h-6 rounded-full border border-latte flex items-center justify-center text-xs hover:bg-espresso hover:text-cream hover:border-espresso transition-colors">+</button>
+                </div>
+                <span class="font-serif font-bold">$${(c.unitPrice * c.qty).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      updateCartTotals();
+    }
+
+    function updateCartQty(uid, delta) {
+      const item = cart.find(c => c.uid == uid);
+      if (item) {
+        item.qty = Math.max(1, item.qty + delta);
+        saveToStorage();
+        renderCart();
+        updateCartBadge();
+      }
+    }
+
+    function removeFromCart(uid) {
+      cart = cart.filter(c => c.uid != uid);
+      saveToStorage();
+      renderCart();
+      updateCartBadge();
+    }
+
+    function clearCart() {
+      cart = [];
+      appliedCoupon = null;
+      saveToStorage();
+      renderCart();
+      updateCartBadge();
+      document.getElementById('couponBox').classList.remove('hidden');
+      document.getElementById('appliedCoupon').classList.add('hidden');
+    }
+
+    function updateCartTotals() {
+      const subtotal = cart.reduce((a, c) => a + c.unitPrice * c.qty, 0);
+      let discount = 0;
+      
+      if (appliedCoupon && COUPONS[appliedCoupon]) {
+        discount = subtotal * (COUPONS[appliedCoupon] / 100);
+        document.getElementById('subtotalRow').classList.remove('hidden');
+        document.getElementById('discountRow').classList.remove('hidden');
+        document.getElementById('subtotalAmt').textContent = '$' + subtotal.toFixed(2);
+        document.getElementById('discountAmt').textContent = '-$' + discount.toFixed(2);
+      } else {
+        document.getElementById('subtotalRow').classList.add('hidden');
+        document.getElementById('discountRow').classList.add('hidden');
+      }
+      
+      document.getElementById('totalAmt').textContent = '$' + (subtotal - discount).toFixed(2);
+    }
+
+    // ===== COUPON =====
+    function applyCoupon() {
+      const code = document.getElementById('couponInput').value.trim().toUpperCase();
+      if (COUPONS[code]) {
+        appliedCoupon = code;
+        document.getElementById('couponCode').textContent = code;
+        document.getElementById('couponBox').classList.add('hidden');
+        document.getElementById('appliedCoupon').classList.remove('hidden');
+        updateCartTotals();
+        showToast(lang === 'en' ? 'Coupon applied!' : 'បានអនុវត្តប័ណ្ណ!');
+      } else {
+        showToast(lang === 'en' ? 'Invalid code' : 'កូដមិនត្រឹមត្រូវ');
+      }
+    }
+
+    function removeCoupon() {
+      appliedCoupon = null;
+      document.getElementById('couponInput').value = '';
+      document.getElementById('couponBox').classList.remove('hidden');
+      document.getElementById('appliedCoupon').classList.add('hidden');
+      updateCartTotals();
+    }
+
+    // ===== TABLE =====
+    function renderTableOptions() {
+      const select = document.getElementById('tableSelect');
+      select.innerHTML = '<option value="">-</option>' + TABLES.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
+
+    // ===== PLACE ORDER =====
+    function placeOrder() {
+      const table = document.getElementById('tableSelect').value;
+      if (!table) {
+        showToast(lang === 'en' ? 'Please select a table' : 'សូមជ្រើសរើសតុ');
+        return;
+      }
+
+      if (cart.length === 0) return;
+
+      const subtotal = cart.reduce((a, c) => a + c.unitPrice * c.qty, 0);
+      let discount = appliedCoupon && COUPONS[appliedCoupon] ? subtotal * (COUPONS[appliedCoupon] / 100) : 0;
+      
+      const order = {
+        id: Date.now().toString().slice(-6),
+        items: [...cart],
+        table,
+        note: document.getElementById('noteInput').value,
+        subtotal,
+        discount,
+        total: subtotal - discount,
+        coupon: appliedCoupon,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      orders.unshift(order);
+      cart = [];
+      appliedCoupon = null;
+      saveToStorage();
+      
+      closePanels();
+      updateCartBadge();
+      showToast(lang === 'en' ? 'Order placed!' : 'បានបញ្ជាទិញ!');
+      showStatusBar(order);
+
+      document.getElementById('couponInput').value = '';
+      document.getElementById('noteInput').value = '';
+      document.getElementById('tableSelect').value = '';
+      document.getElementById('couponBox').classList.remove('hidden');
+      document.getElementById('appliedCoupon').classList.add('hidden');
+    }
+
+    // ===== MY ORDERS =====
+    function openMyOrders() {
+      renderMyOrders();
+      document.getElementById('cartOverlay').classList.remove('hidden');
+      document.getElementById('myOrdersPanel').classList.add('open');
+      document.getElementById('myOrdersPanel').style.transform = 'translateX(0) translateY(0)';
+    }
+
+    function renderMyOrders() {
+      const list = document.getElementById('myOrdersList');
+      
+      if (orders.length === 0) {
+        list.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full text-center py-20">
+            <div class="w-16 h-16 rounded-full border-2 border-dashed border-latte flex items-center justify-center mb-4">
+              <svg class="w-6 h-6 text-mocha/30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/></svg>
+            </div>
+            <p class="text-mocha/50">${lang === 'en' ? 'No orders yet' : 'មិនមានការបញ្ជាទិញ'}</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = orders.map(o => `
+        <div class="bg-white rounded-xl p-4 border border-latte">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <span class="text-xs text-mocha/50">Order #${o.id}</span>
+              <p class="text-sm font-semibold">Table ${o.table}</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-medium ${o.status === 'pending' ? 'bg-amber-100 text-amber-700' : o.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+              ${o.status.charAt(0).toUpperCase() + o.status.slice(1)}
+            </span>
+          </div>
+          <div class="space-y-2 mb-3">
+            ${o.items.map(i => `
+              <div class="flex justify-between text-sm">
+                <span class="text-mocha/70">${i.qty}x ${getText(i.item)}</span>
+                <span class="font-medium">$${(i.unitPrice * i.qty).toFixed(2)}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="pt-3 border-t border-latte flex justify-between items-center">
+            <span class="text-xs text-mocha/50">${new Date(o.createdAt).toLocaleTimeString()}</span>
+            <span class="font-serif font-bold">$${o.total.toFixed(2)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ===== STATUS BAR =====
+    function showStatusBar(order) {
+      document.getElementById('statusText').textContent = lang === 'en' ? 'Order is being prepared...' : 'កំពុងរៀបចំ...';
+      document.getElementById('statusTable').textContent = order.table;
+      document.getElementById('statusOrderId').textContent = order.id;
+      document.getElementById('statusBar').style.transform = 'translateY(0)';
+      document.getElementById('liveOrderDot').classList.remove('hidden');
+    }
+
+    function dismissStatus() {
+      document.getElementById('statusBar').style.transform = 'translateY(100%)';
+    }
+
+    function checkLiveOrders() {
+      const pending = orders.filter(o => o.status === 'pending');
+      if (pending.length > 0) {
+        document.getElementById('liveOrderDot').classList.remove('hidden');
+      }
+    }
+
+    // ===== PANELS =====
+    function closePanels() {
+      document.getElementById('cartOverlay').classList.add('hidden');
+      document.getElementById('cartPanel').classList.remove('open');
+      document.getElementById('myOrdersPanel').classList.remove('open');
+      document.getElementById('myOrdersPanel').style.transform = '';
+    }
+
+    // ===== TOAST =====
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastText').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#langWrap')) {
+        document.getElementById('langDropdown').classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
